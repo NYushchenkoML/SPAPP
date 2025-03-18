@@ -1,20 +1,49 @@
 import axios from 'axios';
-import { app, BrowserWindow, ipcMain, netLog } from 'electron';
+import { app, BrowserWindow, ipcMain, netLog, dialog } from 'electron';
 import childProcess from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import log from 'electron-log';
 import createDatabase from './db.js';
+import pkg from 'electron-updater';
 
+const { saveConfig, loadConfig } = import ('./config');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const { autoUpdater } = pkg;
 
 let win;
 let serverProcess;
 let loadingWin;
 let serverReady = false;
 let db;
+
+// Функция для копирования файла конфигурации по умолчанию
+function copyDefaultConfig() {
+  const defaultConfigPath = path.join(__dirname, 'defaultConfig.json');
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+
+  if (!fs.existsSync(configPath)) {
+    try {
+      fs.copyFileSync(defaultConfigPath, configPath);
+      console.log('Файл конфигурации по умолчанию скопирован');
+    } catch (error) {
+      console.error('Ошибка при копировании файла конфигурации:', error);
+    }
+  }
+}
+
+// Загрузка настроек
+let loadedConfig;
+try {
+  copyDefaultConfig(); // Копируем файл конфигурации по умолчанию при первом запуске
+  loadedConfig = loadConfig() || { printerIp: '192.168.88.110', printerPort: 9100 };
+  console.log('Конфигурация загружена:', loadedConfig);
+} catch (error) {
+  console.error('Ошибка при загрузке конфигурации:', error);
+  loadedConfig = { printerIp: '192.168.88.110', printerPort: 9100 };
+}
 
 // Настройка логирования
 const logPath = path.join(app.isPackaged ? process.resourcesPath : __dirname, 'logs', 'app.log');
@@ -107,8 +136,8 @@ const createWindow = () => {
     try {
       const response = await axios.post('http://localhost:3000/print', {
         command: '~JC',
-        printerIp: '192.168.88.110',
-        printerPort: 9100
+        printerIp: loadedConfig.printerIp,
+        printerPort: loadedConfig.printerPort
       });
       log.info('Запрос на калибровку принтера выполнен успешно');
       console.log(response.data);
@@ -128,8 +157,8 @@ const createWindow = () => {
       const data = await fs.promises.readFile(path.join(app.isPackaged ? process.resourcesPath : __dirname, 'label.zpl'), 'utf8');
       const response = await axios.post('http://localhost:3000/print', {
         command: data,
-        printerIp: '192.168.88.110',
-        printerPort: 9100
+        printerIp: loadedConfig.printerIp,
+        printerPort: loadedConfig.printerPort
       });
       log.info('Запрос на печать документа выполнен успешно');
       console.log(response.data);
@@ -154,6 +183,12 @@ const createWindow = () => {
         event.sender.send('pin-verification', { success: false });
       }
     });
+  });
+
+   ipcMain.on('save-config', (event, config) => {
+    saveConfig(config);
+    loadedConfig = config; // Обновляем текущую конфигурацию
+    console.log('Конфигурация сохранена:', config);
   });
 }
 
@@ -191,6 +226,57 @@ function checkInitializationStatus() {
   }
 }
 
+function setupAutoUpdater() {
+  // Установите feedURL для GitHub Releases
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: process.env.GITHUB_USERNAME,
+    repo: process.env.GITHUB_REPO,
+    private: false,
+  });
+
+  // Отправляем сообщение в loading.html о начале проверки обновлений
+  if (win && win.webContents) {
+    win.webContents.send('update-status', 'Проверка обновлений...');
+  }
+
+  autoUpdater.on('update-available', (info) => {
+    log.info('Update available', info);
+    if (win && win.webContents) {
+      win.webContents.send('update-status', 'Доступно обновление');
+    }
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Available',
+      message: `A new version of SPAPP is available. Downloading now...`
+    });
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    log.info('Update downloaded', info);
+    if (win && win.webContents) {
+      win.webContents.send('update-status', 'Обновление загружено');
+    }
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Update Downloaded',
+      message: 'Restart the app to apply the update.'
+    }).then(() => {
+      autoUpdater.quitAndInstall();
+    });
+  });
+
+  autoUpdater.on('error', (err) => {
+    log.error('Auto-updater error:', err);
+    if (win && win.webContents) {
+      win.webContents.send('update-status', 'Ошибка обновления');
+    }
+  });
+
+  // Проверка обновлений при запуске
+  autoUpdater.checkForUpdates();
+}
+
 app.whenReady().then(async () => {
   try {
     // Создание директории для логов, если она не существует
@@ -218,7 +304,9 @@ app.whenReady().then(async () => {
       stdio: ['inherit', 'inherit', 'inherit', 'ipc'],
       env: {
         ...process.env,
-        NODE_ENV: app.isPackaged ? 'production' : 'development'
+        NODE_ENV: app.isPackaged ? 'production' : 'development',
+        GITHUB_USERNAME: process.env.GITHUB_USERNAME, // Добавляем переменную
+        GITHUB_REPO: process.env.GITHUB_REPO       // Добавляем переменную
       }
     });
     log.info('Сервер запущен');
@@ -252,6 +340,10 @@ app.whenReady().then(async () => {
     // Логирование сетевых событий
     await netLog.startLogging(netLogPath);
     log.info('Логирование сетевых событий запущено');
+
+    // Настройка autoUpdater
+    setupAutoUpdater();
+
   } catch (error) {
     log.error('Ошибка при запуске приложения:', error);
     console.error('Ошибка при запуске приложения:', error);

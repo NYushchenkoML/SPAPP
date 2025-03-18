@@ -2,6 +2,10 @@ directories:
   output: build
   buildResources: resources
 appId: com.yourcompany.spapp
+publish:
+  - provider: github
+    owner: NYushchenkoML
+    repo: SPAPP
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

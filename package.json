@@ -12,6 +12,13 @@
   },
   "build": {
     "appId": "com.yourcompany.spapp",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NYushchenkoML",
+        "repo": "SPAPP"
+      }
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -67,6 +74,8 @@
   "dependencies": {
     "axios": "^1.8.3",
     "electron-log": "^5.3.2",
+    "electron-store": "^10.0.1",
+    "electron-updater": "^6.3.9",
     "express": "^4.21.2",
     "sqlite3": "^5.1.7"
   },
