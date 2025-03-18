@@ -1,0 +1,77 @@
+{
+  "type": "module",
+  "name": "spapp1",
+  "productName": "SPAPP",
+  "version": "0.0.1",
+  "description": "SPAPP - kitchen ARM application",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win --x64",
+    "lint": "echo \"No linting configured\""
+  },
+  "build": {
+    "appId": "com.yourcompany.spapp",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "directories": {
+      "output": "build",
+      "buildResources": "resources"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/server.js",
+        "to": "server.js"
+      },
+      {
+        "from": "src/preload.js",
+        "to": "preload.js"
+      },
+      {
+        "from": "src/loading.js",
+        "to": "loading.js"
+      },
+      {
+        "from": "src/db.js",
+        "to": "db.js"
+      },
+      {
+        "from": "src/main.js",
+        "to": "main.js"
+      },
+      {
+        "from": "src/lock.js",
+        "to": "lock.js"
+      },
+      {
+        "from": "node_modules",
+        "to": "node_modules"
+      },
+      {
+        "from": "src",
+        "to": "app"
+      }
+    ]
+  },
+  "dependencies": {
+    "axios": "^1.8.3",
+    "electron-log": "^5.3.2",
+    "express": "^4.21.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "electron": "^35.0.2",
+    "electron-builder": "^25.1.8"
+  }
+}

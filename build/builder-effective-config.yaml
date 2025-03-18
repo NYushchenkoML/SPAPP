@@ -1,0 +1,34 @@
+directories:
+  output: build
+  buildResources: resources
+appId: com.yourcompany.spapp
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  installerIcon: icon.ico
+  uninstallerIcon: icon.ico
+  installerHeaderIcon: icon.ico
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+files:
+  - filter:
+      - src/**/*
+      - package.json
+extraResources:
+  - from: src/server.js
+    to: server.js
+  - from: src/preload.js
+    to: preload.js
+  - from: src/loading.js
+    to: loading.js
+  - from: src/db.js
+    to: db.js
+  - from: src/main.js
+    to: main.js
+  - from: src/lock.js
+    to: lock.js
+  - from: node_modules
+    to: node_modules
+  - from: src
+    to: app
+electronVersion: 35.0.2

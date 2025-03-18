@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPAPP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            height: 100vh; /* Высота страницы */
+            margin: 0; /* Удаление отступов */
+            display: flex; /* Используем flexbox для позиционирования */
+            justify-content: flex-end; /* Выравнивание по правому краю */
+            align-items: center; /* Выравнивание по вертикали */
+            background-image: linear-gradient(#334c5e, 60%, #0c1216); /* Градиентный фон */
+            user-select: none; /* Отключаем выделение текста */
+            overflow: hidden; /* Отключаем прокрутку страницы */
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 100px; /* Отступ справа */
+        }
+        #btn-block {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        button {
+            width: 100px;
+            font-size: 16px;
+            background-color: #4c93af; /* Красный цвет фона */
+            color: #fff; /* Белый цвет текста */
+            border: 1px solid #333; /* Черная граница */
+            border-radius: 5px; /* Закругленные углы */
+            cursor: pointer; /* Стрелка мыши при наведении */
+            height: 100px;
+        }
+        button:active {
+            background-color: #33505e;
+        }
+        input[type="number"] {
+            width: 300px;
+            height: 30px;
+            font-size: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #000000;
+        }
+        .styled-button {
+            width: 100px;
+            font-size: 16px;
+            background-color: #4CAF50; /* Зеленый цвет фона */
+            color: #fff; /* Белый цвет текста */
+            border: 1px solid #333; /* Черная граница */
+            border-radius: 5px; /* Закругленные углы */
+            cursor: pointer; /* Стрелка мыши при наведении */
+            height: 100px;
+        }
+        .styled-button-clr {
+            width: 100px;
+            font-size: 16px;
+            background-color: #af4c4c; /* Красный цвет фона */
+            color: #fff; /* Белый цвет текста */
+            border: 1px solid #333; /* Черная граница */
+            border-radius: 5px; /* Закругленные углы */
+            cursor: pointer; /* Стрелка мыши при наведении */
+            height: 100px;
+        }
+        .styled-button:hover {
+            background-color: #3e8e41; /* Темнее при наведении */
+        }
+        #message {
+            font-size: 16px;
+            color: #ff9dc2;
+            margin-bottom: 10px;
+        }
+        label {
+            font-size: 30px;
+            color: #a8fcff;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <label>Введите пин-код</label>
+        <input type="number" id="pinCode" maxlength="4">
+        <div id="btn-block">
+            <button onclick="addNum(1)">1</button>
+            <button onclick="addNum(2)">2</button>
+            <button onclick="addNum(3)">3</button>
+            <button onclick="addNum(4)">4</button>
+            <button onclick="addNum(5)">5</button>
+            <button onclick="addNum(6)">6</button>
+            <button onclick="addNum(7)">7</button>
+            <button onclick="addNum(8)">8</button>
+            <button onclick="addNum(9)">9</button>
+            <button class="styled-button-clr" onclick="clrPin()">Сброс</button>
+            <button onclick="addNum(0)">0</button>
+            <button class="styled-button" onclick="checkPin()">Войти</button>
+        </div>
+        <div class="button-block">
+
+        </div>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        //функции
+        const add = (value) => {
+            if (document.getElementById('pinCode').value.length <= 3) {
+                if (document.getElementById('pinCode').value === '') {
+                    document.getElementById('pinCode').value = value;
+                } else {
+                    document.getElementById('pinCode').value += value;
+                }
+            }
+        }
+        const addNum = (num) => {
+            add(num);
+        }
+
+        function checkPin() {
+            const pinCode = document.getElementById('pinCode').value;
+            window.electronAPI.verifyPin(pinCode);
+        }
+
+        function clrPin() {
+            document.getElementById('pinCode').value = '';
+        }
+
+        window.electronAPI.onPinVerification((event, result) => {
+            if (result.success) {
+                window.electronAPI.loadMainMenu();
+            } else {
+                document.getElementById('message').innerText = 'Неправильный пин-код';
+            }
+        });
+    </script>
+</body>
+</html>
