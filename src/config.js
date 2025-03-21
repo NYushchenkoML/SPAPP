@@ -1,5 +1,5 @@
-const Store = require('electron-store');
-const { app } = require('electron');
+const Store = import('electron-store');
+const { app } = import('electron');
 
 const store = new Store({
   cwd: app.getPath('userData'),
@@ -16,4 +16,4 @@ function loadConfig() {
   return store.store;
 }
 
-module.exports = { saveConfig, loadConfig };
+export { saveConfig, loadConfig };

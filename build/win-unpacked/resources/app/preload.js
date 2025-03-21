@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   lockApp: () => ipcRenderer.send('lock-app'),
   quitApp: () => ipcRenderer.send('quit-app'),
   calibratePrinter: () => ipcRenderer.send('calibrate-printer'),
-  printDocument: () => ipcRenderer.send('print-document')
+  printDocument: () => ipcRenderer.send('print-document'),
+  getConfig: () => ipcRenderer.invoke('get-config'),
+  setConfig: (config) => ipcRenderer.invoke('set-config', config)
 });

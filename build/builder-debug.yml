@@ -92,8 +92,8 @@ nsis:
     !macroend
 
     !addplugindir /x86-unicode "C:\Users\ML\AppData\Local\electron-builder\Cache\nsis\nsis-resources-3.4.1\plugins\x86-unicode"
-    !include "C:\Users\ML\AppData\Local\Temp\t-MtQm5S\0-messages.nsh"
-    !include "C:\Users\ML\AppData\Local\Temp\t-MtQm5S\1-messages.nsh"
+    !include "C:\Users\ML\AppData\Local\Temp\t-s3REjF\1-messages.nsh"
+    !include "C:\Users\ML\AppData\Local\Temp\t-s3REjF\0-messages.nsh"
 
     Var newStartMenuLink
     Var oldStartMenuLink

@@ -8,7 +8,6 @@ import log from 'electron-log';
 import createDatabase from './db.js';
 import pkg from 'electron-updater';
 
-const { saveConfig, loadConfig } = import ('./config');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { autoUpdater } = pkg;
@@ -19,31 +18,32 @@ let loadingWin;
 let serverReady = false;
 let db;
 
-// Функция для копирования файла конфигурации по умолчанию
-function copyDefaultConfig() {
-  const defaultConfigPath = path.join(__dirname, 'defaultConfig.json');
-  const configPath = path.join(app.getPath('userData'), 'config.json');
+// Путь к файлу конфигурации в appData
+const configPath = path.join(app.getPath('userData'), 'config.json');
 
-  if (!fs.existsSync(configPath)) {
-    try {
-      fs.copyFileSync(defaultConfigPath, configPath);
-      console.log('Файл конфигурации по умолчанию скопирован');
-    } catch (error) {
-      console.error('Ошибка при копировании файла конфигурации:', error);
+
+// Конфигурация по умолчанию
+const defaultConfig = {
+  printerIp: '192.168.88.110',
+  printerPort: 9100,
+};
+
+// Функция для загрузки конфигурации
+function loadConfig() {
+  try {
+    if (!fs.existsSync(configPath)) {
+      fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
     }
+    const configData = fs.readFileSync(configPath, 'utf8');
+    return JSON.parse(configData);
+  } catch (error) {
+    console.error('Ошибка при загрузке конфигурации:', error);
+    return defaultConfig;
   }
 }
 
-// Загрузка настроек
-let loadedConfig;
-try {
-  copyDefaultConfig(); // Копируем файл конфигурации по умолчанию при первом запуске
-  loadedConfig = loadConfig() || { printerIp: '192.168.88.110', printerPort: 9100 };
-  console.log('Конфигурация загружена:', loadedConfig);
-} catch (error) {
-  console.error('Ошибка при загрузке конфигурации:', error);
-  loadedConfig = { printerIp: '192.168.88.110', printerPort: 9100 };
-}
+// Загружаем конфигурацию при старте приложения
+let loadedConfig = loadConfig();
 
 // Настройка логирования
 const logPath = path.join(app.isPackaged ? process.resourcesPath : __dirname, 'logs', 'app.log');
@@ -104,6 +104,14 @@ const createWindow = () => {
   win.loadFile('src/lock.html');
   win.webContents.openDevTools();
 
+    // Обработка событий IPC для управления конфигурацией
+    ipcMain.handle('get-config', () => loadedConfig);
+
+    ipcMain.handle('set-config', (event, newConfig) => {
+      saveConfig(newConfig);
+      loadedConfig = newConfig;
+    });
+
   ipcMain.on('load-main-menu', () => {
     if (win) {
       win.loadFile('src/mainMenu.html');
@@ -147,11 +155,9 @@ const createWindow = () => {
     }
   });
 
-  ipcMain.on('print-document', async () => {
-    if (!serverProcess.connected) {
-      showErrorWindow('Сервер недоступен');
-      return;
-    }
+  ipcMain.handle('print-document', async () => {
+    const { printerIp, printerPort } = loadedConfig;
+    console.log(`Печать на принтере с IP ${printerIp} и портом ${printerPort}`);
     
     try {
       const data = await fs.promises.readFile(path.join(app.isPackaged ? process.resourcesPath : __dirname, 'label.zpl'), 'utf8');
@@ -284,6 +290,21 @@ app.whenReady().then(async () => {
     if (!fs.existsSync(logsDir)) {
       fs.mkdirSync(logsDir);
     }
+
+    // Функция для копирования файла конфигурации по умолчанию
+function copyDefaultConfig() {
+  const defaultConfigPath = path.join(__dirname, 'defaultConfig.json');
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+
+  if (!fs.existsSync(configPath)) {
+    try {
+      fs.copyFileSync(defaultConfigPath, configPath);
+      console.log('Файл конфигурации по умолчанию скопирован');
+    } catch (error) {
+      console.error('Ошибка при копировании файла конфигурации:', error);
+    }
+  }
+}
 
     // Создание базы данных
     db = await createDatabase();
